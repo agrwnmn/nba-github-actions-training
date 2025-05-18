@@ -1,0 +1,45 @@
+name:   NBA Rookie Workflow
+
+# This workflow will run when code is pushed to the main branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# A workflow run is made up of one or more jobs
+jobs:
+    # This job is called "rookie-training"
+    rookie-training:
+        # The type of runner that the job will run on
+        runs-on: ubuntu-latest
+
+        # Steps represent a sequests of tasks
+        steps: 
+            # Checks out your repository so the workflow anc access it
+            - uses: actions/checkout@v3
+            
+            # Runs a simple command
+            - name: Rookie Drills
+              run: echo "Running my first Github Actions workflow!"
+
+              # Show the Github context
+            - name: Team Info
+              run: | 
+                echo "Repository: ${{ github.repository }}"
+                echo "Workflow triggered by: ${{ github.actor}}"
+                echo "Event: ${{ github.event_name }}"
+
+            # Display the runner environment
+            - name: Show Practice Court
+              run: | 
+                echo "Operating System: ${{ runner.os}}"
+                echo "Runner name: ${{ runner.name }}"
+                echo "Working directory: $GITHUB_WORKSPACE"
+
+            # List all files in the repository
+            - name: Check Equipment
+              run: ls -la
+              
