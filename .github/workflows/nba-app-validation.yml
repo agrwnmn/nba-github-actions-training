@@ -48,28 +48,28 @@ jobs:
               fi
 
           - name: Check player stats completeness
-              run: |
+            run: |
                 node -e '
-      const stats = require("./projects/nba-stats-app/stats.js");
-      let missingStats = false;
-      
-      stats.players.forEach(player => {
-        console.log(`Checking stats for ${player.name}:`);
-        const requiredStats = ["ppg", "rpg", "apg", "spg", "bpg"];
+                  const stats = require("./projects/nba-stats-app/stats.js");
+                  let missingStats = false;
+
+                  stats.players.forEach(player => {
+                    console.log(`Checking stats for ${player.name}:`);
+                    const requiredStats = ["ppg", "rpg", "apg", "spg", "bpg"];
         
-        requiredStats.forEach(stat => {
-          if (player.stats[stat] === undefined) {
-            console.log(`❌ Missing ${stat} for ${player.name}`);
-            missingStats = true;
-          } else {
-            console.log(`✅ ${stat}: ${player.stats[stat]}`);
-          }
-        });
-      });
-      
-      if (missingStats) {
-        process.exit(1);
-      } else {
-        console.log("✅ All players have complete stats!");
-      }
-    '
+                    requiredStats.forEach(stat => {
+                      if (player.stats[stat] === undefined) {
+                        console.log(`❌ Missing ${stat} for ${player.name}`);
+                        missingStats = true;
+                      } else {
+                        console.log(`✅ ${stat}: ${player.stats[stat]}`);
+                      }
+                    });
+                  });
+                        
+                  if (missingStats) {
+                    process.exit(1);
+                  } else {
+                    console.log("✅ All players have complete stats!");
+                  }
+                '
