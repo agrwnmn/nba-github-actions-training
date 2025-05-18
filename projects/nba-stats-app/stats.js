@@ -1,4 +1,4 @@
-// Sample player data - we'll expand this in future labs
+// Sample player data - we'll expand this in future labs I'm just getting started
 const players = [
     {
         name: "LeBron James",
