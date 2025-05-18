@@ -16,7 +16,7 @@ jobs:
 
           - name: Check for required files
             run: |
-              if [ -f "projects/nba-stats-app/index.html"]; then
+              if [ -f "projects/nba-stats-app/index.html" ]; then
                 echo " index.html found"
               else
                 echo " index.html not found"
@@ -38,11 +38,11 @@ jobs:
           - name: Validate JavaScript syntax
             run: | 
               # Use grep to count the number of player objects
-              Player_Count=$(grep -c "name:" projects/nba-stats-app/stats.js)
+              PLAYER_COUNT=$(grep -c "name:" projects/nba-stats-app/stats.js)
               echo "Found $PLAYER_COUNT players in the data"
-              if [$PLAYER_COUNT -lt 2]; then 
+              if [ $PLAYER_COUNT -lt 2 ]; then 
                 echo " Not enough players in the data"
                 exit 1
               else
                 echo " Player data looks good"
-              f1
+              fi
