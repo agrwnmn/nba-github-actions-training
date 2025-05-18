@@ -5,7 +5,7 @@ const players = [
         team: "Los Angeles Lakers",
         stats: {
             ppg: 27.2,
-            rpg: 7.4,
+//            rpg: 7.4,
             apg: 8.3,
             spg: 1.2,
             bpg: 0.8
