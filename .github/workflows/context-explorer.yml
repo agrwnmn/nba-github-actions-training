@@ -31,8 +31,3 @@ jobs:
             env:
               ENV_CONTEXT: ${{ toJSON(env) }}
             run: echo "$ENV_CONTEXT"
-
-          - name: Dump workspace context
-            env:
-              WORKSPACE_CONTEXT: ${{ toJSON(workspace) }}
-            run: echo "$WORKSPACE_CONTEXT"
