@@ -1,0 +1,266 @@
+name: NBA Stats CI
+
+on: 
+  # Run on push to any branch
+  push:
+    branches:
+      - main
+      - 'feature/**'
+    
+    paths:
+      - 'projects/nba-stats-app/**'
+      - '.github/workflows/nba-stat-ci.yml'
+
+
+  # Run on PRs to main
+  pull_request:
+    branches: [main]
+    paths:
+      - 'projects/nba-stats-app/**'
+
+  # Run on a schedule (daily at midnight UTC)
+  schedule:
+    - cron: '0 0 * * *'
+
+  # Allow manual triggering of workflows
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test against'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+        debug:
+          description: 'Enable dbug mode'
+          required: false
+          type: boolean
+          default: false
+
+# Global environment variables
+env:
+  APP_DIR: projects/nba-stats-app
+  NODE_VERSION: '16'
+jobs: 
+  lint: 
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '${{ env.NODE_VERSION }}'
+      - name: install ESLint
+        run: npm install -g eslint
+      - name: Check JavaScript syntax
+        run: |
+          echo "Checking JavaScript syntax..."
+          # Simple check for JS syntax errors
+          for file in ${{ env.APP_DIR}}/*.js; do
+            echo "Checking $file"
+            node -c "Sfile" || exit 1
+          done
+          echo "✅ JavaScript syntax is valid"
+      - name: Display trigger info
+        run: |
+          echo "Workflow triggered by ${{ github.event_name}} event"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Environment: ${{ github.event.inputs.environment }}"
+            echo "Debug mode: ${{ github.event.inputs.debug }}"
+          fi
+
+test: 
+  name: Run tests on Multiple Platforms
+  needs: lint
+  runs-on: ${{ matrix.os}}
+  strategy: 
+    matrix:
+      os: [ubuntu-latest, windws-latest, macos-latest]
+      include:
+        - os: ubuntu-latest
+          test_command: 'npm test'
+        - os: windows-latest
+          test_command: 'npm test:windwos'
+        - os: macos-latest
+          test_command: 'npm test:macos'
+    fail-fast: false
+
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Install test dependencies
+      run: npm install -g jest
+    
+    - name: Create test file
+      run: |
+        mkdir -p ${{ env.APP_DIR }}/tests
+        cat > ${{ env.APP_DIR }}/tests/stats.test.js << 'EOL'
+        const { players, calculatePER } = require('../stats.js');
+        
+        test('Players array should exist', () => {
+          expect(players).toBeDefined();
+          expect(Array.isArray(players)).toBe(true);
+        });
+          
+        test('Players should have required stats', () => {
+          players.forEach(player => {
+            expect(player.name).toBeDefined();
+            expect(player.team).toBeDefined();
+            expect(player.stats).toBeDefined();
+            expect(player.stats.ppg).toBeDefined();
+            expect(player.stats.rpg).toBeDefined();
+            expect(player.stats.apg).toBeDefined();
+          });
+        });
+        
+        test('calculatePER should return a number', () => {
+          const player = players[0];
+          const per = calculatePER(player);
+          expect(parseFloat(per)).toBeGreaterThan(0);
+        });
+        EOL
+      
+    - name: Run tests
+      run: |
+        cd ${{ env.APP_DIR }}
+        echo "Running tests on ${{ matrix.os }}"
+        echo "Test command: ${{ matrix.test_command }}"
+        # Since we don't have a full test setup, we'll just run the tests with Node
+        node -e "
+          const { players, calculatePER } = require('./stats.js');
+          
+          // Test 1: Players array should exist
+          console.log('Test 1: Players array should exist');
+          if (!players || !Array.isArray(players)) {
+            console.error('❌ Test failed: players is not an array');
+            process.exit(1);
+          }
+          console.log('✅ Test passed');
+          
+          // Test 2: Players should have required stats
+          console.log('Test 2: Players should have required stats');
+          for (const player of players) {
+            if (!player.name || !player.team || !player.stats ||
+                !player.stats.ppg || !player.stats.rpg || !player.stats.apg) {
+              console.error(`❌ Test failed: player ${player.name || 'unknown'} missing required stats`);
+              process.exit(1);
+            }
+          }
+          console.log('✅ Test passed');
+          
+          // Test 3: calculatePER should return a number
+          console.log('Test 3: calculatePER should return a number');
+          const per = calculatePER(players[0]);
+          if (isNaN(parseFloat(per))) {
+            console.error('❌ Test failed: calculatePER did not return a number');
+            process.exit(1);
+          }
+          console.log('✅ Test passed');
+          
+          console.log('All tests passed! 🏆');
+    
+    - name: Report OS info
+      run: | 
+        echo "Ttests completed on ${{ runner.os}}"
+        if [ "${{ matrix.os }}" = " ubuntu-latest" ]; then
+          echo "Ubuntu version"
+          lsb_release -a
+        elif [ "${{ matrix.os }}" = " macos-latest" ]; then
+          echo "macOS version"
+          sw_vers]
+        elif [ "${{ matrix.os }}" = " windows-latest" ]; then
+          echo "Windows version:"
+          systeminfo | finder /B /C:"OS Name" /C:"OS Version"
+        fi
+      shell: bash
+
+build: 
+  name: Build and Package
+  needs: test
+  runs-on: ubuntu-latest
+  # Only run on main branch or manual workflow
+  if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+  
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Copy application files
+      run: cp -r ${{ env.APP_DIR }}/* build/ 
+      
+    - name: Create bundle
+      run: |
+        cd build
+        echo "// Bundle created at $(date)" > bundle.js 
+        cat stats.js .. bundle.js 
+        echo "Bundle created successfully"
+
+    - name: Upload build artifact
+      uses: action/upload-artifact@v3
+      with:
+        name: nba-stats-bundle
+        path: build/
+
+    - name: Set build output
+      id: build
+      run: echo "version=1.0.$(date +%Y%m%d%H%M)" >> $GITHUB_OUTPUT
+
+  outputs:
+    version: ${{ steps.build.outputs.version }}
+
+deploy:
+  name: Deploy to Environment
+  needs: build
+  runs-on: ubuntu-latest
+  environment: ${{ github.event.inputs.environment || 'development' }}
+  
+  steps:
+    - name: Download build artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: nba-stats-bundle
+        path: deploy/
+    
+    - name: Show deployment info
+      run: |
+        echo "📦 Deploying version ${{ needs.build.outputs.version }}"
+        echo "🌐 Environment: ${{ github.event.inputs.environment || 'development' }}"
+        echo "📂 Files to deploy:"
+        ls -la deploy/
+    
+    - name: Deploy (simulation)
+      run: |
+        # This is a simulation of deployment
+        echo "🚀 Deploying to ${{ github.event.inputs.environment || 'development' }}..."
+        sleep 2
+        echo "✅ Deployment complete! (simulated)"
+    
+    - name: Update deployment status
+      if: success()
+      run: |
+        echo "DEPLOYMENT_URL=https://example.com/${{ github.event.inputs.environment || 'development' }}" >> $GITHUB_ENV
+        echo "DEPLOYMENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
+    
+    - name: Deployment summary
+      run: |
+        echo "## 🏀 NBA Stats App Deployment"      >> $GITHUB_STEP_SUMMARY
+        echo ""                                     >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Status:** Successful"            >> $GITHUB_STEP_SUMMARY
+        echo "🌐 **Environment:** ${{ github.event.inputs.environment || 'development' }}" >> $GITHUB_STEP_SUMMARY
+        echo "📦 **Version:** ${{ needs.build.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 **URL:** ${{ env.DEPLOYMENT_URL }}" >> $GITHUB_STEP_SUMMARY
+        echo "⏰ **Deployed at:** ${{ env.DEPLOYMENT_TIME }}" >> $GITHUB_STEP_SUMMARY 
