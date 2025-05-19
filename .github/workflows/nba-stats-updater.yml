@@ -1,0 +1,174 @@
+name: NBA Stats Daily Update
+
+on: 
+  # Run at 8 am UTC daily
+  schedule:
+    - cron: '0 8 * * *'
+
+  # Allow manual triggering
+  workflow_dispatch: 
+    inputs:
+      player_name: 
+        description: 'Player to update (leave empy for all)'
+        required: false
+        type: string
+
+env:
+  APP_DIR: projects/nba-stats-app
+
+jobs:
+  update-stats:
+    name: update Player statistics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with: 
+          node-version: '16'
+
+      - name: Determine player to update
+        id: player
+        run: | 
+          if [ -n "${{ github.event.inputs.player_name }}" ]; then
+            echo "name=${{ github.event.inputs.player_name }}"
+            echo "Updating stats for ${{ github.event.inputs.player_name }}"
+          else
+            echo "name=all" $GITHUB_OUTPUT"
+            echo "Updating stats for all players"
+          fi
+
+      - name: Update player stats (simulation)
+        run: | 
+        # This is a simulation of updating stats from an API
+        echo "🏀 Updating NBA player statistics..."
+
+
+        # Create a temp file with updated stats
+        cat > updated_stats.js << 'EOL'
+        // Sample player data - Updated on $(date)
+
+        const players = [
+            {
+                name: "LeBron James",
+                team: "Los Angeles Lakers",
+                stats: {
+                    ppg: 28.1,  // Updated
+                    rpg: 7.6,   // Updated
+                    apg: 8.5,   // Updated
+                    spg: 1.2,
+                    bpg: 0.8
+                }
+            },
+            {
+                name: "Stephen Curry",
+                team: "Golden State Warriors",
+                stats: {
+                    ppg: 26.2,  // Updated
+                    rpg: 5.3,   // Updated
+                    apg: 6.5,   // Updated
+                    spg: 1.3,
+                    bpg: 0.2
+                }
+            },
+            {
+                name: "Giannis Antetokounmpo",
+                team: "Milwaukee Bucks",
+                stats: {
+                    ppg: 30.2,  // Updated
+                    rpg: 11.8,  // Updated
+                    apg: 6.0,   // Updated
+                    spg: 1.1,
+                    bpg: 1.4
+                }
+            },
+            {
+                name: "Kevin Durant",
+                team: "Phoenix Suns",
+                stats: {
+                    ppg: 29.3,
+                    rpg: 7.2,
+                    apg: 5.1,
+                    spg: 0.8,
+                    bpg: 1.5
+                }
+            }
+          ];
+          
+          // Calculate advanced stats (we'll implement these in future labs)
+          function calculatePER(player) {
+              // Player Efficiency Rating - simplified version
+              return (player.stats.ppg + player.stats.rpg * 1.2 + 
+                      player.stats.apg * 1.5 + player.stats.spg * 2 + 
+                      player.stats.bpg * 2).toFixed(2);
+          }
+          
+          // If we're in a Node.js environment (for testing in workflows)
+          if (typeof module !== 'undefined') {
+              module.exports = {
+                  players,
+                  calculatePER
+              };
+          }
+          EOL
+          
+          # Show differences (this would be more complex in a real scenario)
+          if [ "${{ steps.player.outputs.name }}" = "all" ]; then
+            echo "Updating all players' statistics"
+            mv updated_stats.js ${{ env.APP_DIR }}/stats.js
+          else
+            echo "Updating statistics for ${{ steps.player.outputs.name }}"
+            # In a real scenario, we would only update the specified player
+            mv updated_stats.js ${{ env.APP_DIR }}/stats.js
+          fi
+      
+      - name: Calculate new stats
+        id: stats
+        run: |
+          # Calculate average points for all players
+          AVG_POINTS=$(node -e "
+            const { players } = require('./${{ env.APP_DIR }}/stats.js');
+            const totalPoints = players.reduce((sum, player) => sum + player.stats.ppg, 0);
+            const avgPoints = (totalPoints / players.length).toFixed(1);
+            console.log(avgPoints);
+          ")
+          echo "avg_points=$AVG_POINTS" >> $GITHUB_OUTPUT
+          
+          # Count total players
+          PLAYER_COUNT=$(node -e "
+            const { players } = require('./${{ env.APP_DIR }}/stats.js');
+            console.log(players.length);
+          ")
+          echo "player_count=$PLAYER_COUNT" >> $GITHUB_OUTPUT
+      
+      - name: Commit and push changes
+        if: github.event_name != 'pull_request'
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          
+          git add ${{ env.APP_DIR }}/stats.js
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update NBA player statistics [automated]
+            
+            Updated via GitHub Actions workflow
+            - Player count: ${{ steps.stats.outputs.player_count }}
+            - Average PPG: ${{ steps.stats.outputs.avg_points }}"
+            
+            git push
+          fi
+      
+      - name: Stats update summary
+        run: |
+          echo "## 🏀 NBA Stats Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Status:** Complete" >> $GITHUB_STEP_SUMMARY
+          echo "🏆 **Players updated:** ${{ steps.stats.outputs.player_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Average PPG:** ${{ steps.stats.outputs.avg_points }}" >> $GITHUB_STEP_SUMMARY
+          echo "⏰ **Updated at:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_STEP_SUMMARY    
