@@ -117,7 +117,8 @@ jobs:
           fi
         shell: bash
       
-      - name: Create test file
+      - name: Create test file (Unix)
+        if: runner.os != 'Windows'
         run: |
           mkdir -p ${{ env.APP_DIR }}/tests
           cat > ${{ env.APP_DIR }}/tests/stats.test.js << 'EOL'
@@ -145,8 +146,39 @@ jobs:
             expect(parseFloat(per)).toBeGreaterThan(0);
           });
           EOL
+        shell: bash
       
-      - name: Create stats.js if missing
+      - name: Create test file (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir -p ${{ env.APP_DIR }}/tests
+          echo "const { players, calculatePER } = require('../stats.js');" > ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "test('Players array should exist', () => {" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "  expect(players).toBeDefined();" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "  expect(Array.isArray(players)).toBe(true);" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "});" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "test('Players should have required stats', () => {" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "  players.forEach(player => {" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "    expect(player.name).toBeDefined();" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "    expect(player.team).toBeDefined();" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "    expect(player.stats).toBeDefined();" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "    expect(player.stats.ppg).toBeDefined();" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "    expect(player.stats.rpg).toBeDefined();" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "    expect(player.stats.apg).toBeDefined();" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "  });" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "});" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "test('calculatePER should return a number', () => {" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "  const player = players[0];" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "  const per = calculatePER(player);" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "  expect(parseFloat(per)).toBeGreaterThan(0);" >> ${{ env.APP_DIR }}/tests/stats.test.js
+          echo "});" >> ${{ env.APP_DIR }}/tests/stats.test.js
+        shell: bash
+      
+      - name: Create stats.js if missing (Unix)
+        if: runner.os != 'Windows'
         run: |
           if [ ! -f "${{ env.APP_DIR }}/stats.js" ]; then
             echo "Creating stats.js file since it's missing"
@@ -206,6 +238,69 @@ jobs:
           EOL
           fi
         shell: bash
+      
+      - name: Create stats.js if missing (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          if (-not (Test-Path "${{ env.APP_DIR }}/stats.js")) {
+            echo "Creating stats.js file since it's missing"
+            $statsContent = @'
+          // Sample player data
+          const players = [
+              {
+                  name: "LeBron James",
+                  team: "Los Angeles Lakers",
+                  stats: {
+                      ppg: 27.2,
+                      rpg: 7.4,
+                      apg: 8.3,
+                      spg: 1.2,
+                      bpg: 0.8
+                  }
+              },
+              {
+                  name: "Stephen Curry",
+                  team: "Golden State Warriors",
+                  stats: {
+                      ppg: 25.8,
+                      rpg: 5.2,
+                      apg: 6.3,
+                      spg: 1.3,
+                      bpg: 0.2
+                  }
+              },
+              {
+                  name: "Giannis Antetokounmpo",
+                  team: "Milwaukee Bucks",
+                  stats: {
+                      ppg: 29.9,
+                      rpg: 11.6,
+                      apg: 5.8,
+                      spg: 1.1,
+                      bpg: 1.4
+                  }
+              }
+          ];
+
+          // Calculate advanced stats
+          function calculatePER(player) {
+              // Player Efficiency Rating - simplified version
+              return (player.stats.ppg + player.stats.rpg * 1.2 + 
+                      player.stats.apg * 1.5 + player.stats.spg * 2 + 
+                      player.stats.bpg * 2).toFixed(2);
+          }
+
+          // If we're in a Node.js environment (for testing in workflows)
+          if (typeof module !== 'undefined') {
+              module.exports = {
+                  players,
+                  calculatePER
+              };
+          }
+          '@
+            Set-Content -Path "${{ env.APP_DIR }}/stats.js" -Value $statsContent
+          }
+        shell: pwsh
         
       - name: Run tests
         run: |
