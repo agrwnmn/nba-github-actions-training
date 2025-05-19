@@ -44,9 +44,8 @@ jobs:
         run: | 
           # This is a simulation of updating stats from an API
           echo "🏀 Updating NBA player statistics..."
-
-
-        # Create a temp file with updated stats
+          
+          # Create a temp file with updated stats
           cat > updated_stats.js << 'EOL'
           // Sample player data - Updated on $(date)
           
@@ -171,4 +170,4 @@ jobs:
           echo "✅ **Status:** Complete" >> $GITHUB_STEP_SUMMARY
           echo "🏆 **Players updated:** ${{ steps.stats.outputs.player_count }}" >> $GITHUB_STEP_SUMMARY
           echo "📊 **Average PPG:** ${{ steps.stats.outputs.avg_points }}" >> $GITHUB_STEP_SUMMARY
-          echo "⏰ **Updated at:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_STEP_SUMMARY    
+          echo "⏰ **Updated at:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_STEP_SUMMARY
