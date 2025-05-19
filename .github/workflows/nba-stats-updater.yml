@@ -33,86 +33,86 @@ jobs:
         id: player
         run: | 
           if [ -n "${{ github.event.inputs.player_name }}" ]; then
-            echo "name=${{ github.event.inputs.player_name }}"
+            echo "name=${{ github.event.inputs.player_name }}" >> $GITHUB_OUTPUT
             echo "Updating stats for ${{ github.event.inputs.player_name }}"
           else
-            echo "name=all" $GITHUB_OUTPUT"
+            echo "name=all" >> $GITHUB_OUTPUT
             echo "Updating stats for all players"
           fi
 
       - name: Update player stats (simulation)
         run: | 
-        # This is a simulation of updating stats from an API
-        echo "🏀 Updating NBA player statistics..."
+          # This is a simulation of updating stats from an API
+          echo "🏀 Updating NBA player statistics..."
 
 
         # Create a temp file with updated stats
-        cat > updated_stats.js << 'EOL'
-        // Sample player data - Updated on $(date)
-
-        const players = [
-            {
-                name: "LeBron James",
-                team: "Los Angeles Lakers",
-                stats: {
-                    ppg: 28.1,  // Updated
-                    rpg: 7.6,   // Updated
-                    apg: 8.5,   // Updated
-                    spg: 1.2,
-                    bpg: 0.8
-                }
-            },
-            {
-                name: "Stephen Curry",
-                team: "Golden State Warriors",
-                stats: {
-                    ppg: 26.2,  // Updated
-                    rpg: 5.3,   // Updated
-                    apg: 6.5,   // Updated
-                    spg: 1.3,
-                    bpg: 0.2
-                }
-            },
-            {
-                name: "Giannis Antetokounmpo",
-                team: "Milwaukee Bucks",
-                stats: {
-                    ppg: 30.2,  // Updated
-                    rpg: 11.8,  // Updated
-                    apg: 6.0,   // Updated
-                    spg: 1.1,
-                    bpg: 1.4
-                }
-            },
-            {
-                name: "Kevin Durant",
-                team: "Phoenix Suns",
-                stats: {
-                    ppg: 29.3,
-                    rpg: 7.2,
-                    apg: 5.1,
-                    spg: 0.8,
-                    bpg: 1.5
-                }
+          cat > updated_stats.js << 'EOL'
+          // Sample player data - Updated on $(date)
+          
+          const players = [
+              {
+                  name: "LeBron James",
+                  team: "Los Angeles Lakers",
+                  stats: {
+                      ppg: 28.1,  // Updated
+                      rpg: 7.6,   // Updated
+                      apg: 8.5,   // Updated
+                      spg: 1.2,
+                      bpg: 0.8
+                  }
+              },
+              {
+                  name: "Stephen Curry",
+                  team: "Golden State Warriors",
+                  stats: {
+                      ppg: 26.2,  // Updated
+                      rpg: 5.3,   // Updated
+                      apg: 6.5,   // Updated
+                      spg: 1.3,
+                      bpg: 0.2
+                  }
+              },
+              {
+                  name: "Giannis Antetokounmpo",
+                  team: "Milwaukee Bucks",
+                  stats: {
+                      ppg: 30.2,  // Updated
+                      rpg: 11.8,  // Updated
+                      apg: 6.0,   // Updated
+                      spg: 1.1,
+                      bpg: 1.4
+                  }
+              },
+              {
+                  name: "Kevin Durant",
+                  team: "Phoenix Suns",
+                  stats: {
+                      ppg: 29.3,
+                      rpg: 7.2,
+                      apg: 5.1,
+                      spg: 0.8,
+                      bpg: 1.5
+                  }
+              }
+            ];
+            
+            // Calculate advanced stats (we'll implement these in future labs)
+            function calculatePER(player) {
+                // Player Efficiency Rating - simplified version
+                return (player.stats.ppg + player.stats.rpg * 1.2 + 
+                        player.stats.apg * 1.5 + player.stats.spg * 2 + 
+                        player.stats.bpg * 2).toFixed(2);
             }
-          ];
-          
-          // Calculate advanced stats (we'll implement these in future labs)
-          function calculatePER(player) {
-              // Player Efficiency Rating - simplified version
-              return (player.stats.ppg + player.stats.rpg * 1.2 + 
-                      player.stats.apg * 1.5 + player.stats.spg * 2 + 
-                      player.stats.bpg * 2).toFixed(2);
-          }
-          
-          // If we're in a Node.js environment (for testing in workflows)
-          if (typeof module !== 'undefined') {
-              module.exports = {
-                  players,
-                  calculatePER
-              };
-          }
-          EOL
+            
+            // If we're in a Node.js environment (for testing in workflows)
+            if (typeof module !== 'undefined') {
+                module.exports = {
+                    players,
+                    calculatePER
+                };
+            }
+            EOL
           
           # Show differences (this would be more complex in a real scenario)
           if [ "${{ steps.player.outputs.name }}" = "all" ]; then
