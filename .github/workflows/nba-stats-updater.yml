@@ -133,6 +133,8 @@ jobs:
             const avgPoints = (totalPoints / players.length).toFixed(1);
             console.log(avgPoints);
           ")
+          # Make sure output is just a number without any extra text
+          AVG_POINTS=$(echo "$AVG_POINTS" | tr -d '\n')
           echo "avg_points=$AVG_POINTS" >> $GITHUB_OUTPUT
           
           # Count total players
@@ -140,6 +142,8 @@ jobs:
             const { players } = require('./${{ env.APP_DIR }}/stats.js');
             console.log(players.length);
           ")
+          # Make sure output is just a number without any extra text
+          PLAYER_COUNT=$(echo "$PLAYER_COUNT" | tr -d '\n')
           echo "player_count=$PLAYER_COUNT" >> $GITHUB_OUTPUT
       
       - name: Commit and push changes
